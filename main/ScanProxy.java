@@ -15,7 +15,7 @@ import java.util.concurrent.Executors;
  */
 public class ScanProxy {
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws SQLException, ClassNotFoundException {
         // 计时
         long start = System.currentTimeMillis();
 
@@ -52,41 +52,38 @@ public class ScanProxy {
         }
 
         System.out.println("扫描完成，正在操作数据库...");
+
+        // 操作数据库
         Connection con = DBConnection.getConnection();
-        if (con != null) {
-            PreparedStatement statement;
-            try {
+        PreparedStatement statement;
+        try {
+            // 删除proxy表中所有记录
+            statement = con.prepareStatement("DELETE FROM proxy");
+            statement.executeUpdate();
 
-                // 删除proxy表中所有记录
-                statement = con.prepareStatement("DELETE FROM proxy");
-                statement.executeUpdate();
-
-                // 将maps中所有代理插入数据库
-                statement = con.prepareStatement("INSERT INTO proxy VALUES(?, ?)");
-                for (HashMap<String, String> map: maps) {
-                    for (Map.Entry<String, String> mapper: map.entrySet()) {
-                        statement.setString(1, mapper.getKey());
-                        statement.setString(2, mapper.getValue());
-                        statement.executeUpdate();
-                    }
-                }
-
-                // 输入插入数据库日志
-                System.out.println("已将 " + maps.size() + " 个网段所有代理插入数据库");
-
-                System.exit(0);
-            } catch (SQLException e) {
-                e.printStackTrace();
-            } finally {
-                try {
-                    con.close();
-                } catch (SQLException e) {
-                    e.printStackTrace();
+            // 将maps中所有代理插入数据库
+            statement = con.prepareStatement("INSERT INTO proxy VALUES(?, ?)");
+            for (HashMap<String, String> map: maps) {
+                for (Map.Entry<String, String> mapper: map.entrySet()) {
+                    statement.setString(1, mapper.getKey());
+                    statement.setString(2, mapper.getValue());
+                    statement.executeUpdate();
                 }
             }
+
+            // 输入插入数据库日志
+            System.out.println("已将 " + maps.size() + " 个网段所有代理插入数据库");
+
+            System.exit(0);
+        } catch (SQLException e) {
+            e.printStackTrace();
+        } finally {
+            try {
+                con.close();
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
         }
-
-
 
     }
 }

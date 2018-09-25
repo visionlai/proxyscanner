@@ -2,8 +2,6 @@ package main;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
-import java.io.FileWriter;
-import java.io.IOException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -21,7 +19,7 @@ public class ProxyWriter {
      * @param country 代理ip所属国家
      * @param num 代理编号
      */
-    public static JSONObject getAnProxyJSON(String proxyIP, String country, int num) {
+    private static JSONObject getAnProxyJSON(String proxyIP, String country, int num) {
         // 设置不使用代理规则
         JSONArray bypassList = new JSONArray();
         JSONObject bypass1 = new JSONObject();
@@ -55,7 +53,7 @@ public class ProxyWriter {
         return proxy;
     }
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws SQLException, ClassNotFoundException {
 
         // 新建代理集合
         JSONObject proxies = new JSONObject();
@@ -77,33 +75,31 @@ public class ProxyWriter {
 
         // 提取数据库中信息
         Connection con = DBConnection.getConnection();
-        if (con != null) {
+        try {
+            PreparedStatement statement = con.prepareStatement("SELECT * FROM proxy");
+            ResultSet result = statement.executeQuery();
+
+            int num = 1;
+            while (result.next()) {
+                String ip = result.getString("ip");
+                String country = result.getString("country");
+
+                // 获取一个代理
+                JSONObject proxy = getAnProxyJSON(ip, country, num);
+
+                // 代理集合添加代理
+                proxies.put("+" + country + num, proxy);
+                num++;
+            }
+            System.out.println(proxies);
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+        } finally {
             try {
-                PreparedStatement statement = con.prepareStatement("SELECT * FROM proxy");
-                ResultSet result = statement.executeQuery();
-
-                int num = 1;
-                while (result.next()) {
-                    String ip = result.getString("ip");
-                    String country = result.getString("country");
-
-                    // 获取一个代理
-                    JSONObject proxy = getAnProxyJSON(ip, country, num);
-
-                    // 代理集合添加代理
-                    proxies.put("+" + country + num, proxy);
-                    num++;
-                }
-                System.out.println(proxies);
-
+                con.close();
             } catch (SQLException e) {
                 e.printStackTrace();
-            } finally {
-                try {
-                    con.close();
-                } catch (SQLException e) {
-                    e.printStackTrace();
-                }
             }
         }
     }
